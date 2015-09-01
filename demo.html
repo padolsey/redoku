@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta chartset="utf-8" />
+	<title>REDOKU</title>
+	<style>
+		body {
+			width: 500px;
+			margin: 0 auto;
+			text-align: center;
+		}
+		body, input {
+			font: 1em consolas,monospace;
+		}
+		input {
+			width: 2em;
+			font-size: 1em;
+			padding: .2em;
+			border: 1px solid #CCC;
+			text-align: center;
+		}
+		h1 {
+			font-weight: normal;
+			color: #777;
+			font-size: 2.5em;
+		}
+		h2 { 
+			font-size: 1em;
+		}
+		h1 strong {
+			color: #000;
+		}
+		h1 strong.woop {
+			color: #308F46;
+		}
+		table {
+			margin: 13em auto 4em;
+		}
+		th {
+			width: 2em;
+			position: relative;
+		}
+		tr td:first-child {
+			white-space: nowrap;
+			text-align: right;
+		}
+		.correct {
+			background: #8FDF9C;
+		}
+		.incorrect {
+			background: red;
+		}
+		span {
+			display: inline-block;
+			position: absolute;
+			transform: rotate(45deg);
+			transform-origin: 100% 0;
+			right: 10px;
+			bottom: -5px;
+			white-space: nowrap;
+		}
+		p {
+			font-size: .8em;
+			margin-top: 3em;
+			color: #777;
+		}
+	</style>
+</head>
+<body>
+	<h1>^(?: <strong>REDOKU</strong> )$</h1>
+	<h2>"That RegExp Sudoku Crossword Thing."</h2>
+	<div id="g"></div>
+	<p>
+		Refresh page for a new game. <br>
+		Game created by <a href="http://james.padolsey.com">James</a>.
+	</p>
+	<script src="./jquery.js"></script>
+	<script src="./redoku.js"></script>
+	<script>
+
+		makeRedokuGrid(4,4);
+
+		function makeRedokuGrid(r, c) {
+
+			var d = redoku(r, c);
+
+			var table = $('<table>').appendTo('#g');
+			var thead = $('<thead>').appendTo(table);
+			var tbody = $('<tbody>').appendTo(table);
+
+			thead.append('<th>');
+
+			d.cols.forEach(function(r) {
+				thead.append($('<th>').append('<span>' + r + '</span>'));
+			});
+
+			var ii = 0; // track index, store it
+			d.rows.forEach(function(r, ri) {
+
+				var tr = $('<tr>').appendTo(tbody);
+
+				$('<td>').text(r).appendTo(tr);
+
+				for (var i = 0, l = d.cols.length; i < l; ++i)
+					$('<td>').html(
+						$('<input>').data('i', ii++)
+					).appendTo(tr);
+
+			});
+
+			var solutions = 0;
+
+			table.delegate('input', 'change', function() {
+
+				$(this).removeClass('correct incorrect');
+
+				var v = $(this).val().trim();
+
+				if (!v) {
+					return;
+				}
+				var n = $(this).data('i');
+				var row = Math.floor(n / c);
+				var col = n % c;
+				var rx = d.rows[row];
+				var cx = d.cols[col];
+
+				// rowAttempt = RealAnswer characters for this row substituted with user's attempted input
+				var rowAttempt = d.ans.slice(row * c, row * c + c).join('');
+				rowAttempt = rowAttempt.slice(0, col) + v + rowAttempt.slice(col + 1);
+
+				// rowAttempt = RealAnswer characters for this column substituted with user's attempted input
+				var columnAttempt = d.rows.map(function(r, i) {
+					return d.ans[i * c + col];
+				}).join('');
+				columnAttempt = columnAttempt.slice(0, row) + v + columnAttempt.slice(row + 1);
+
+				if (RegExp('^(?:' + rx + ')$').test(rowAttempt) &&
+						RegExp('^(?:' + cx + ')$').test(columnAttempt)) {
+
+					// We have a match!
+
+					solutions++;
+					$(this).attr('disabled', true).addClass('correct');
+
+				} else {
+
+					$(this).addClass('incorrect').removeClass('correct');
+
+				}
+
+				if (solutions === r * c) {
+					// Finished!!
+					$('h1 strong').text('YOU ROCK').addClass('woop');
+				}
+			});
+
+		}
+
+	</script>
+</body>
+</html>
